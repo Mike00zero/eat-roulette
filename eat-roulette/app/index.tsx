@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     SafeAreaView,
     View,
@@ -9,6 +9,7 @@ import {
     Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import RouletteModal from "../components/RouletteModal";
 
 const categories = ["Pizza", "Sushi", "Mexican", "Burgers"];
 
@@ -69,6 +70,8 @@ function RestaurantCard({ item }: { item: Restaurant }) {
 }
 
 export default function HomeScreen() {
+    const [showRoulette, setShowRoulette] = useState(false);
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView
@@ -84,8 +87,8 @@ export default function HomeScreen() {
                     <Text style={styles.locationText}>Near You</Text>
                 </View>
 
-                <Pressable style={styles.decideButton}>
-                    <Text style={styles.decideButtonText}>Decide For Me</Text>
+                <Pressable style={styles.decideButton} onPress={() => setShowRoulette(true)}>
+                    <Text style={styles.decideButtonText} >Decide For Me</Text>
                 </Pressable>
 
                 <ScrollView
@@ -112,6 +115,13 @@ export default function HomeScreen() {
                     ))}
                 </View>
             </ScrollView>
+            <RouletteModal
+                visible={showRoulette}
+                onClose={() => setShowRoulette(false)}
+                onSpin={() => {
+                    console.log("Spin the wheel");
+                }}
+            />
         </SafeAreaView>
     );
 }
