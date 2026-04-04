@@ -11,22 +11,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
+import { FOODS } from '../constants';
 
 type RouletteModalProps = {
     visible: boolean;
     onClose: () => void;
 };
-
-const FOODS = [
-    "Steak",     // top-right
-    "Fast Food",    // right
-    "Chicken",  // bottom-right
-    "Taco",     // bottom
-    "Chinese",// bottom-left
-    "Sushi",    // left
-    "Burger",   // top-left
-    "Pizza",    // top
-];
 
 // 8 slices = 45 degrees each
 const SLICE_ANGLE = 360 / FOODS.length;
@@ -38,11 +28,13 @@ const PEG_ANGLE = 360 / PEG_COUNT;
 export default function RouletteModal({
   visible,
   onClose,
+  selectedOption,
 }: RouletteModalProps) {
     const rotation = useRef(new Animated.Value(0)).current;
     const [currentRotation, setCurrentRotation] = useState(0);
     const [isSpinning, setIsSpinning] = useState(false);
     const [selectedFood, setSelectedFood] = useState<string | null>(null);
+    const [selectedFoodIndex, setSelectedFoodIndex] = useState<number | null>(null);
 
     // Sound
     const tickSounds = useRef<Audio.Sound[]>([]);
@@ -159,6 +151,7 @@ export default function RouletteModal({
 
             setCurrentRotation(finalRotation);
             setSelectedFood(FOODS[winnerIndex]);
+            setSelectedFoodIndex(winnerIndex);
             setIsSpinning(false);
             spinningRef.current = false;
         });
@@ -214,6 +207,7 @@ export default function RouletteModal({
                             styles.spinButton,
                             styles.spinButtonAccept,
                         ]}
+                        onPress={() => selectedOption(selectedFoodIndex)}
                     >
                         <Text style={styles.spinButtonText}>
                             THIS SOUNDS GOOD

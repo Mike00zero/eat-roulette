@@ -10,8 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import RouletteModal from "../components/RouletteModal";
-
-const categories = ["Pizza", "Sushi", "Mexican", "Burgers"];
+import { FOODS } from '../constants';
 
 const picks = [
     {
@@ -70,7 +69,14 @@ function RestaurantCard({ item }: { item: Restaurant }) {
 }
 
 export default function HomeScreen() {
+    const categories = FOODS;
     const [showRoulette, setShowRoulette] = useState(false);
+    const [selectedIndex, setSelectedOption] = useState(null);
+
+    const selectedFood = (foodIndex) => {
+        setSelectedOption(foodIndex);
+        setShowRoulette(false);
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -88,7 +94,7 @@ export default function HomeScreen() {
                 </View>
 
                 <Pressable style={styles.decideButton} onPress={() => setShowRoulette(true)}>
-                    <Text style={styles.decideButtonText} >Decide For Me</Text>
+                    <Text style={styles.decideButtonText}>Decide For Me</Text>
                 </Pressable>
 
                 <ScrollView
@@ -96,8 +102,14 @@ export default function HomeScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.categoriesRow}
                 >
-                    {categories.map((category) => (
-                        <Pressable key={category} style={styles.categoryChip}>
+                    {categories.map((category, index) => (
+                        <Pressable
+                            key={category}
+                            style={() => [
+                                styles.categoryChip,
+                                selectedIndex === index && styles.categoryChipSelected
+                            ]}
+                        >
                             <Text style={styles.categoryChipText}>{category}</Text>
                         </Pressable>
                     ))}
@@ -121,6 +133,7 @@ export default function HomeScreen() {
                 onSpin={() => {
                     console.log("Spin the wheel");
                 }}
+                selectedOption={selectedFood}
             />
         </SafeAreaView>
     );
@@ -207,6 +220,9 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: "600",
         color: "#5d5d5d",
+    },
+    categoryChipSelected: {
+        borderColor: "#000",
     },
     sectionHeader: {
         flexDirection: "row",
