@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     SafeAreaView,
     View,
@@ -9,40 +9,54 @@ import {
     Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import RouletteModal from "../components/RouletteModal";
-import { FOODS } from '../constants';
-
-const picks = [
-    {
-        id: "1",
-        name: "Burger House",
-        rating: "4.7",
-        cuisine: "American",
-        image:
-            "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-        id: "2",
-        name: "Sakura Sushi",
-        rating: "4.6",
-        cuisine: "Japanese",
-        image:
-            "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=800&q=80",
-    },
-];
+import RouletteModal from "@/components/RouletteModal";
+import { FOODS, foodTypeMap } from '@/constants';
+import { searchNearbyRestaurants, GOOGLE_API_KEY } from "@/lib/googlePlacesApi";
+import { router } from "expo-router";
 
 type Restaurant = {
     id: string;
-    name: string;
-    rating: string;
-    cuisine: string;
-    image: string;
+    name?: string;
+    rating?: number;
+    cuisine?: string;
+    priceLevel?: string;
+    distanceText?: string;
+    driveTimeText?: string;
+    photos?: string;
 };
 
-function RestaurantCard({ item }: { item: Restaurant }) {
+type Props = {
+    item: Restaurant;
+};
+
+function RestaurantCard({ item }: Props) {
+    function getPhotoUrl(photoName: string, apiKey: string, maxWidth = 400) {
+        return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidth}&key=${apiKey}`;
+    }
+
+    const openDetails = () => {
+        router.push({
+            pathname: "/restaurant/[id]",
+            params: {
+                id: item.id,
+                name: item.name,
+                rating: item.rating?.toString() ?? "",
+                priceLevel: item.priceLevel ?? "",
+                distanceText: item.distanceText ?? "",
+                driveTimeText: item.driveTimeText ?? "",
+                imageUrl: item.photos ?? "",
+            },
+        });
+    };
+
     return (
-        <View style={styles.card}>
-            <Image source={{ uri: item.image }} style={styles.cardImage} />
+        <Pressable style={styles.card} onPress={openDetails}>
+            <Image
+                source={{
+                    uri: getPhotoUrl(item?.photos?.[1]?.name, GOOGLE_API_KEY),
+                }}
+                style={styles.cardImage}
+            />
             <View style={styles.cardBody}>
                 <Text style={styles.cardTitle} numberOfLines={1}>
                     {item.name}
@@ -64,7 +78,7 @@ function RestaurantCard({ item }: { item: Restaurant }) {
                     </Pressable>
                 </View>
             </View>
-        </View>
+        </Pressable>    
     );
 }
 
@@ -72,10 +86,43 @@ export default function HomeScreen() {
     const categories = FOODS;
     const [showRoulette, setShowRoulette] = useState(false);
     const [selectedIndex, setSelectedOption] = useState(null);
+    const [restaurants, setRestaurants] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchRestaurants = async (param = []) => {
+        try {
+            setLoading(true);
+
+            // example coordinates for now
+            const latitude = 40.930657713557366;
+            const longitude = -73.86751997116457;
+            const searchRestaurants = param.length ? param : ['restaurant'];
+
+            const results = await searchNearbyRestaurants({
+                latitude,
+                longitude,
+                params: searchRestaurants,
+            });
+
+            setRestaurants(results);
+        } catch (error: any) {
+            console.log("Error", error.message || "Failed to fetch restaurants");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRestaurants();
+    }, []);
 
     const selectedFood = (foodIndex) => {
+        const selectedFoodOption = FOODS[foodIndex];
+
         setSelectedOption(foodIndex);
         setShowRoulette(false);
+        fetchRestaurants(foodTypeMap[selectedFoodOption]);
+        console.log('foodType', foodTypeMap[selectedFoodOption]);
     }
 
     return (
@@ -122,7 +169,7 @@ export default function HomeScreen() {
                 </View>
 
                 <View style={styles.cardsRow}>
-                    {picks.map((item) => (
+                    {restaurants.map((item) => (
                         <RestaurantCard key={item.id} item={item} />
                     ))}
                 </View>
@@ -242,10 +289,11 @@ const styles = StyleSheet.create({
     },
     cardsRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: 12,
     },
     card: {
-        width: 148,
+        width: "48%",
         backgroundColor: "#fff",
         borderRadius: 11,
         overflow: "hidden",
