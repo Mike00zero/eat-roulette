@@ -19,3 +19,10 @@ export const foodTypeMap = {
     Sandwich: ["sandwich_shop"],
     Chicken: ["chicken_restaurant", "fast_food_restaurant"],
 };
+
+export const priceLevelMap = {
+    'PRICE_LEVEL_INEXPENSIVE': '$',
+    'PRICE_LEVEL_MODERATE': '$$',
+    'PRICE_LEVEL_EXPENSIVE': '$$$',
+    'PRICE_LEVEL_VERY_EXPENSIVE': '$$$$',
+}

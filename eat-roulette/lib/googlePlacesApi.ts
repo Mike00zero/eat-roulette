@@ -35,7 +35,7 @@ export async function searchNearbyRestaurants({
                 "Content-Type": "application/json",
                 "X-Goog-Api-Key": GOOGLE_API_KEY,
                 "X-Goog-FieldMask":
-                    "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.types,places.photos",
+                    "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.types,places.photos,places.priceLevel",
             },
             body: JSON.stringify({
                 includedTypes: params,
@@ -69,5 +69,6 @@ export async function searchNearbyRestaurants({
         lng: place.location?.longitude,
         types: place.types ?? [],
         photos: place.photos ?? [],
+        priceLevel: place.priceLevel,
     })).sort((a, b) => b.rating - a.rating);
 }

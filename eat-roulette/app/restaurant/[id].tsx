@@ -1,15 +1,22 @@
-import React from "react";
+import React, {useRef, useEffect, useState} from "react";
 import {
     View,
     Text,
     StyleSheet,
+    ScrollView,
     Image,
     Pressable,
     SafeAreaView,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+    Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import {GOOGLE_API_KEY} from "@/lib/googlePlacesApi";
+import { getDriveInfo } from "@/lib/googleRoutesApi";
+import { GOOGLE_API_KEY } from "@/lib/googlePlacesApi";
+
+const { width } = Dimensions.get('window');
 
 export default function RestaurantDetailScreen() {
     const params = useLocalSearchParams<{
@@ -19,47 +26,124 @@ export default function RestaurantDetailScreen() {
         priceLevel?: string;
         distanceText?: string;
         driveTimeText?: string;
-        imageUrl?: string;
+        photos?: object;
     }>();
 
     const {
-        name = "Burger House",
-        rating = "4.7",
-        priceLevel = "$$",
-        distanceText = "0.6 miles away",
-        driveTimeText = "12 min drive",
-        imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80",
+        name,
+        rating = "",
+        priceLevel = "",
+        restaurantLat,
+        restaurantLng,
+        userLat = 40.930657713557366,
+        userLng = -73.86751997116457,
+        photos,
     } = params;
+    const [distanceText, setDistanceText] = useState('');
+    const [driveTimeText, setDriveTimeText] = useState('');
 
-    function getPhotoUrl(photoName: string, apiKey: string, maxWidth = 400) {
-        return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidth}&key=${apiKey}`;
-    }
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadRoute = async () => {
+            try {
+                const result = await getDriveInfo(
+                    userLat,
+                    userLng,
+                    restaurantLat,
+                    restaurantLng
+                );
+
+                if (cancelled) return;
+
+                setDistanceText(result.distanceMiles);
+                setDriveTimeText(result.driveTimeText);
+            } catch (err) {
+                if (!cancelled) {
+                    console.log("route error", err);
+                }
+            }
+        };
+
+        loadRoute();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [userLat, userLng, restaurantLat, restaurantLng]);
+
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    const CARD_WIDTH = width - 32;
+
+    const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const index = Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH);
+        setActiveIndex(index);
+    };
+
+    const API_KEY = GOOGLE_API_KEY;
+    const galleryPhotos = JSON.parse(photos);
+
+    const galleryImages =
+        galleryPhotos?.map((photo: any, index: number) => ({
+            id: `${index}`,
+            uri: `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=1200&key=${API_KEY}`,
+            width: photo.widthPx,
+            height: photo.heightPx,
+        })) ?? [];
 
     return (
         <>
             <Stack.Screen options={{ headerShown: false }} />
 
-            <SafeAreaView style={styles.container}>
-                <View style={styles.heroWrapper}>
-                    <Image source={{ uri: getPhotoUrl(imageUrl?.[1]?.name, GOOGLE_API_KEY) }} style={styles.heroImage} />
+            <View style={styles.heroWrapper}>
+                <ScrollView
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={handleScrollEnd}
+                >
+                    {galleryImages.map((item) => {
+                        return (
+                            <Image
+                                key={item.id}
+                                source={{uri: item.uri}}
+                                style={styles.heroImage}
+                                resizeMode="cover"
+                            />
+                        )
+                    })}
+                </ScrollView>
 
-                    <Pressable style={styles.backButton} onPress={() => router.back()}>
-                        <Ionicons name="chevron-back" size={28} color="#fff" />
-                    </Pressable>
-
-                    <Text style={styles.heroTitle}>{name}</Text>
+                <View style={styles.pagination}>
+                    {galleryImages.map((_, index) => (
+                        <View
+                            key={index}
+                            style={[
+                                styles.dot,
+                                index === activeIndex && styles.activeDot,
+                            ]}
+                        />
+                    ))}
                 </View>
 
+                <Pressable style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name="chevron-back" size={28} color="#fff" />
+                </Pressable>
+            </View>
+
+            <SafeAreaView style={styles.container}>
                 <View style={styles.content}>
                     <Text style={styles.title}>{name}</Text>
 
                     <View style={styles.ratingRow}>
-                        <Text style={styles.ratingText}>⭐ {rating}</Text>
-                        <Text style={styles.ratingText}>⭐ {priceLevel}</Text>
+                        <Ionicons name="star" size={13} color="#ff9d00" />
+                        <Text style={styles.ratingText}>{rating}</Text>
+                        <Text style={styles.ratingText}>{priceLevel}</Text>
                     </View>
 
                     <Text style={styles.locationText}>
-                        📍 {distanceText} • {driveTimeText}
+                        <Ionicons name="location" size={18} color="#f66a0a" /> {distanceText} • {driveTimeText}
                     </Text>
 
                     <View style={styles.divider} />
@@ -90,24 +174,34 @@ const styles = StyleSheet.create({
         position: "relative",
     },
     heroImage: {
+        width,
+        height: 480,
+    },
+    pagination: {
+        position: "absolute",
+        bottom: 16,
         width: "100%",
-        height: 330,
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 999,
+        marginHorizontal: 4,
+        backgroundColor: "rgba(255,255,255,0.5)",
+    },
+    activeDot: {
+        backgroundColor: "#fff",
+        width: 10,
+        height: 10,
     },
     backButton: {
         position: "absolute",
         top: 52,
         left: 18,
         zIndex: 2,
-    },
-    heroTitle: {
-        position: "absolute",
-        top: 48,
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        color: "#fff",
-        fontSize: 22,
-        fontWeight: "800",
     },
     content: {
         flex: 1,
@@ -126,9 +220,10 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     ratingRow: {
+        alignItems: "center",
         flexDirection: "row",
         justifyContent: "center",
-        gap: 18,
+        gap: 10,
         marginBottom: 12,
     },
     ratingText: {

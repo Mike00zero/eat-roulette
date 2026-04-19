@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import RouletteModal from "@/components/RouletteModal";
-import { FOODS, foodTypeMap } from '@/constants';
+import { FOODS, foodTypeMap, priceLevelMap } from '@/constants';
 import { searchNearbyRestaurants, GOOGLE_API_KEY } from "@/lib/googlePlacesApi";
 import { router } from "expo-router";
 
@@ -22,12 +22,22 @@ type Restaurant = {
     priceLevel?: string;
     distanceText?: string;
     driveTimeText?: string;
+    lat?: number;
+    lng?: number;
     photos?: string;
 };
 
 type Props = {
     item: Restaurant;
 };
+
+const getPriceLevel = (level) => {
+    if (!level) {
+        return null;
+    }
+
+    return priceLevelMap[level];
+}
 
 function RestaurantCard({ item }: Props) {
     function getPhotoUrl(photoName: string, apiKey: string, maxWidth = 400) {
@@ -40,14 +50,16 @@ function RestaurantCard({ item }: Props) {
             params: {
                 id: item.id,
                 name: item.name,
-                rating: item.rating?.toString() ?? "",
-                priceLevel: item.priceLevel ?? "",
-                distanceText: item.distanceText ?? "",
-                driveTimeText: item.driveTimeText ?? "",
-                imageUrl: item.photos ?? "",
+                rating: item.rating?.toString() ?? null,
+                restaurantLat: item.lat,
+                restaurantLng: item.lng,
+                priceLevel: getPriceLevel(item.priceLevel),
+                photos: JSON.stringify(item?.photos),
             },
         });
     };
+
+    // console.log('item?.photos', typeof item?.photos);
 
     return (
         <Pressable style={styles.card} onPress={openDetails}>
@@ -65,16 +77,12 @@ function RestaurantCard({ item }: Props) {
                 <View style={styles.ratingRow}>
                     <Ionicons name="star" size={13} color="#ff9d00" />
                     <Text style={styles.rating}>{item.rating}</Text>
-                    <Text style={styles.meta}> · {item.cuisine}</Text>
+                    <Text style={styles.meta}>{getPriceLevel(item.priceLevel)}</Text>
                 </View>
 
                 <View style={styles.cardButtonsRow}>
                     <Pressable style={styles.viewButton}>
                         <Text style={styles.viewButtonText}>View</Text>
-                    </Pressable>
-
-                    <Pressable style={styles.spinAgainButton}>
-                        <Text style={styles.spinAgainText}>Spin again</Text>
                     </Pressable>
                 </View>
             </View>
@@ -122,7 +130,6 @@ export default function HomeScreen() {
         setSelectedOption(foodIndex);
         setShowRoulette(false);
         fetchRestaurants(foodTypeMap[selectedFoodOption]);
-        console.log('foodType', foodTypeMap[selectedFoodOption]);
     }
 
     return (
@@ -336,6 +343,7 @@ const styles = StyleSheet.create({
         color: "#5f5f5f",
         fontSize: 12,
         fontWeight: "500",
+        marginLeft: 5,
     },
     cardButtonsRow: {
         flexDirection: "row",
@@ -349,6 +357,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         marginRight: 6,
+        width: "100%",
     },
     viewButtonText: {
         color: "#fff",
