@@ -70,5 +70,6 @@ export async function searchNearbyRestaurants({
         types: place.types ?? [],
         photos: place.photos ?? [],
         priceLevel: place.priceLevel,
+        websiteUri: place.websiteUri,
     })).sort((a, b) => b.rating - a.rating);
 }

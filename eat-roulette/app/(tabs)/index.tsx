@@ -25,6 +25,7 @@ type Restaurant = {
     lat?: number;
     lng?: number;
     photos?: string;
+    websiteUri?: string;
 };
 
 type Props = {
@@ -44,6 +45,8 @@ function RestaurantCard({ item }: Props) {
         return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidth}&key=${apiKey}`;
     }
 
+    console.log('item', item);
+
     const openDetails = () => {
         router.push({
             pathname: "/restaurant/[id]",
@@ -55,17 +58,16 @@ function RestaurantCard({ item }: Props) {
                 restaurantLng: item.lng,
                 priceLevel: getPriceLevel(item.priceLevel),
                 photos: JSON.stringify(item?.photos),
+                websiteUri: item.websiteUri,
             },
         });
     };
-
-    // console.log('item?.photos', typeof item?.photos);
 
     return (
         <Pressable style={styles.card} onPress={openDetails}>
             <Image
                 source={{
-                    uri: getPhotoUrl(item?.photos?.[1]?.name, GOOGLE_API_KEY),
+                    uri: getPhotoUrl(item?.photos?.[0]?.name, GOOGLE_API_KEY),
                 }}
                 style={styles.cardImage}
             />

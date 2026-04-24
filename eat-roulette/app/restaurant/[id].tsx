@@ -27,6 +27,7 @@ export default function RestaurantDetailScreen() {
         distanceText?: string;
         driveTimeText?: string;
         photos?: object;
+        websiteUri?: string;
     }>();
 
     const {
@@ -38,6 +39,7 @@ export default function RestaurantDetailScreen() {
         userLat = 40.930657713557366,
         userLng = -73.86751997116457,
         photos,
+        websiteUri,
     } = params;
     const [distanceText, setDistanceText] = useState('');
     const [driveTimeText, setDriveTimeText] = useState('');
